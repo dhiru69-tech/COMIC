@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>COMIC — Biometric Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <header class="site-header">
+    <nav class="nav">
+      <div class="nav-wordmark">COMIC</div>
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showPage('analyzer')">Analyzer</button>
+        <button class="nav-tab" onclick="showPage('compare')">Compare</button>
+        <button class="nav-tab" onclick="showPage('history')">History</button>
+        <button class="nav-tab" onclick="showPage('dashboard')">Dashboard</button>
+      </div>
+      <div class="nav-right">
+        <div class="deploy-badge mode-local" id="deployBadge">
+          <span class="db-dot"></span>
+          <span id="deployLabel">Local</span>
+        </div>
+        <span class="status-dot"></span>
+        <span class="status-label">System Ready</span>
+        <button class="btn-settings" onclick="openSettings()" title="Settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PAGE: ANALYZER
+  ═══════════════════════════════════════════════════════ -->
+  <div class="page active" id="page-analyzer">
+
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-kicker">V 2.0 — LOCAL INFERENCE</div>
+        <h1 class="hero-heading">Precision analysis<br />of face and voice.</h1>
+        <p class="hero-body">COMIC maps your facial geometry and acoustic signature against established biometric benchmarks. Every result is generated locally.</p>
+        <button class="btn-primary" onclick="scrollToAnalyzer()">Open Analyzer</button>
+      </div>
+      <div class="hero-stat-strip">
+        <div class="stat-item"><span class="stat-number">468</span><span class="stat-desc">Facial landmarks mapped per frame</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat-item"><span class="stat-number">40+</span><span class="stat-desc">Acoustic features extracted per sample</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat-item"><span class="stat-number">100%</span><span class="stat-desc">On-device processing, zero uploads</span></div>
+      </div>
+    </section>
+
+    <section class="analyzer" id="analyzer">
+      <div class="analyzer-inner">
+        <div class="mode-bar">
+          <button class="mode-btn active" id="mode-face" onclick="switchMode('face')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
+            Face Analysis
+          </button>
+          <button class="mode-btn" id="mode-voice" onclick="switchMode('voice')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            Voice Analysis
+          </button>
+        </div>
+
+        <!-- FACE MODULE -->
+        <div class="module" id="module-face">
+          <div class="module-grid">
+            <div class="input-col">
+              <div class="panel-label">INPUT</div>
+              <div class="camera-viewport" id="cameraViewport">
+                <video id="videoFeed" autoplay playsinline muted></video>
+                <canvas id="meshCanvas"></canvas>
+                <div class="scan-ui" id="scanUI">
+                  <div class="crosshair">
+                    <span class="ch ch-tl"></span><span class="ch ch-tr"></span>
+                    <span class="ch ch-bl"></span><span class="ch ch-br"></span>
+                    <div class="scan-beam"></div>
+                  </div>
+                  <div class="scan-status" id="scanStatus">ALIGN FACE</div>
+                </div>
+                <div class="viewport-empty" id="viewportEmpty">
+                  <div class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+                  <span>Camera inactive</span>
+                </div>
+                <div class="processing-overlay" id="faceProcessingOverlay" style="display:none">
+                  <div class="processing-inner">
+                    <div class="proc-bar-wrap"><div class="proc-bar" id="procBar"></div></div>
+                    <div class="proc-step" id="procStep">Initializing</div>
+                  </div>
+                </div>
+              </div>
+              <div class="input-actions">
+                <button class="btn-secondary" id="startCamBtn" onclick="startCamera()">Start Camera</button>
+                <button class="btn-secondary" id="captureBtn" onclick="captureAndAnalyze()" disabled>Capture</button>
+                <button class="btn-ghost" onclick="triggerUpload()">Upload Image</button>
+                <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="handleImageUpload(event)" />
+              </div>
+            </div>
+
+            <div class="results-col" id="faceResultsCol">
+              <div class="results-empty" id="faceResultsEmpty">
+                <div class="panel-label">REPORT</div>
+                <div class="empty-report">
+                  <div class="empty-report-grid">
+                    <div class="skeleton-block sh-sm"></div><div class="skeleton-block sh-lg"></div>
+                    <div class="skeleton-block sh-md"></div><div class="skeleton-block sh-sm"></div>
+                    <div class="skeleton-block sh-lg"></div><div class="skeleton-block sh-md"></div>
+                  </div>
+                  <p class="empty-report-hint">Capture or upload a face to generate your biometric report.</p>
+                </div>
+              </div>
+
+              <div class="report" id="faceReport" style="display:none">
+                <div class="report-header">
+                  <div class="panel-label">REPORT</div>
+                  <div class="report-meta">
+                    <span id="reportTimestamp"></span>
+                    <span class="report-tag" id="faceClassTag">—</span>
+                    <button class="btn-export" onclick="exportFacePDF()" title="Export PDF">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      PDF
+                    </button>
+                    <button class="btn-export" onclick="saveToHistory('face')" title="Save to History">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                      Save
+                    </button>
+                  </div>
+                </div>
+                <div class="primary-score-row">
+                  <div class="primary-score-left">
+                    <div class="primary-score-label">Overall Score</div>
+                    <div class="primary-score-value" id="overallScore">—</div>
+                  </div>
+                  <div class="score-arc-wrap">
+                    <svg class="score-arc" viewBox="0 0 100 60">
+                      <path class="arc-track" d="M10,55 A45,45 0 0,1 90,55" stroke-width="5" fill="none"/>
+                      <path class="arc-fill" id="arcFill" d="M10,55 A45,45 0 0,1 90,55" stroke-width="5" fill="none" stroke-dasharray="141.37" stroke-dashoffset="141.37"/>
+                    </svg>
+                    <div class="arc-score" id="arcScoreNum">0</div>
+                  </div>
+                </div>
+                <div class="metric-table">
+                  <div class="metric-row"><span class="metric-name">Symmetry Index</span><div class="metric-track"><div class="metric-bar-fill" id="bar-symmetry"></div></div><span class="metric-val" id="val-symmetry">—</span></div>
+                  <div class="metric-row"><span class="metric-name">Golden Proportions</span><div class="metric-track"><div class="metric-bar-fill" id="bar-proportions"></div></div><span class="metric-val" id="val-proportions">—</span></div>
+                  <div class="metric-row"><span class="metric-name">Skin Clarity</span><div class="metric-track"><div class="metric-bar-fill" id="bar-skin"></div></div><span class="metric-val" id="val-skin">—</span></div>
+                  <div class="metric-row"><span class="metric-name">Jaw Definition</span><div class="metric-track"><div class="metric-bar-fill" id="bar-jaw"></div></div><span class="metric-val" id="val-jaw">—</span></div>
+                  <div class="metric-row"><span class="metric-name">Eye Spacing</span><div class="metric-track"><div class="metric-bar-fill" id="bar-eye"></div></div><span class="metric-val" id="val-eye">—</span></div>
+                </div>
+                <div class="classification-row">
+                  <div class="classif-block"><div class="classif-label">Face Shape</div><div class="classif-value" id="faceShapeVal">—</div></div>
+                  <div class="classif-block"><div class="classif-label">Symmetry Grade</div><div class="classif-value" id="symGradeVal">—</div></div>
+                  <div class="classif-block"><div class="classif-label">Aesthetic Class</div><div class="classif-value" id="aestheticClassVal">—</div></div>
+                </div>
+                <div class="detected-features">
+                  <div class="features-label">Detected Features</div>
+                  <div class="features-list" id="featuresList"></div>
+                </div>
+                <div class="assessment-block">
+                  <div class="assessment-label">Clinical Assessment</div>
+                  <div class="assessment-text" id="assessmentText"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VOICE MODULE -->
+        <div class="module" id="module-voice" style="display:none">
+          <div class="module-grid">
+            <div class="input-col">
+              <div class="panel-label">AUDIO INPUT</div>
+              <div class="audio-viewport">
+                <canvas id="audioCanvas"></canvas>
+                <div class="audio-center">
+                  <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+                    <span class="record-btn-inner">
+                      <svg class="icon-mic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                      <svg class="icon-stop" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                    </span>
+                  </button>
+                  <!-- Real-time pitch display -->
+                  <div class="pitch-display" id="pitchDisplay" style="display:none">
+                    <span class="pitch-hz" id="pitchHz">— Hz</span>
+                    <span class="pitch-note" id="pitchNote">—</span>
+                  </div>
+                  <div class="record-label" id="recordLabel">Press to record</div>
+                  <div class="record-timer" id="recordTimer">—</div>
+                </div>
+              </div>
+              <div class="waveform-strip" id="waveformStrip" style="display:none">
+                <canvas id="waveformCanvas"></canvas>
+                <div class="waveform-meta">
+                  <span class="waveform-dur" id="waveformDur">—</span>
+                  <span class="waveform-tag">RECORDED SAMPLE</span>
+                </div>
+              </div>
+              <div class="input-actions">
+                <button class="btn-secondary" id="analyzeVoiceBtn" onclick="analyzeVoice()" disabled>Analyze Voice</button>
+                <button class="btn-ghost" id="clearVoiceBtn" onclick="clearVoice()" disabled>Clear</button>
+              </div>
+            </div>
+
+            <div class="results-col">
+              <div class="results-empty" id="voiceResultsEmpty">
+                <div class="panel-label">REPORT</div>
+                <div class="empty-report">
+                  <div class="empty-report-grid">
+                    <div class="skeleton-block sh-sm"></div><div class="skeleton-block sh-lg"></div>
+                    <div class="skeleton-block sh-md"></div><div class="skeleton-block sh-sm"></div>
+                  </div>
+                  <p class="empty-report-hint">Record your voice to generate a vocal analysis report.</p>
+                </div>
+              </div>
+              <div class="report" id="voiceReport" style="display:none">
+                <div class="report-header">
+                  <div class="panel-label">REPORT</div>
+                  <div class="report-meta">
+                    <span id="voiceReportTimestamp"></span>
+                    <span class="report-tag" id="voiceClassTag">—</span>
+                    <button class="btn-export" onclick="exportVoicePDF()">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      PDF
+                    </button>
+                    <button class="btn-export" onclick="saveToHistory('voice')">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                      Save
+                    </button>
+                  </div>
+                </div>
+                <div class="primary-score-row">
+                  <div class="primary-score-left">
+                    <div class="primary-score-label">Vocal Score</div>
+                    <div class="primary-score-value" id="voiceOverallScore">—</div>
+                  </div>
+                  <div class="score-arc-wrap">
+                    <svg class="score-arc" viewBox="0 0 100 60">
+                      <path class="arc-track" d="M10,55 A45,45 0 0,1 90,55" stroke-width="5" fill="none"/>
+                      <path class="arc-fill arc-fill-voice" id="voiceArcFill" d="M10,55 A45,45 0 0,1 90,55" stroke-width="5" fill="none" stroke-dasharray="141.37" stroke-dashoffset="141.37"/>
+                    </svg>
+                    <div class="arc-score" id="voiceArcNum">0</div>
+                  </div>
+                </div>
+                <div class="metric-table">
+                  <div class="metric-row"><span class="metric-name">Fundamental Pitch</span><div class="metric-track"><div class="metric-bar-fill mf-voice" id="bar-pitch"></div></div><span class="metric-val" id="val-pitch">—</span></div>
+                  <div class="metric-row"><span class="metric-name">Vocal Clarity</span><div class="metric-track"><div class="metric-bar-fill mf-voice" id="bar-clarity"></div></div><span class="metric-val" id="val-clarity">—</span></div>
+                  <div class="metric-row"><span class="metric-name">Chest Resonance</span><div class="metric-track"><div class="metric-bar-fill mf-voice" id="bar-resonance"></div></div><span class="metric-val" id="val-resonance">—</span></div>
+                  <div class="metric-row"><span class="metric-name">Tonal Consistency</span><div class="metric-track"><div class="metric-bar-fill mf-voice" id="bar-tone"></div></div><span class="metric-val" id="val-tone">—</span></div>
+                  <div class="metric-row"><span class="metric-name">Dynamic Range</span><div class="metric-track"><div class="metric-bar-fill mf-voice" id="bar-dynamic"></div></div><span class="metric-val" id="val-dynamic">—</span></div>
+                </div>
+                <div class="classification-row">
+                  <div class="classif-block"><div class="classif-label">Voice Type</div><div class="classif-value" id="voiceTypeVal">—</div></div>
+                  <div class="classif-block"><div class="classif-label">Est. Frequency</div><div class="classif-value" id="voiceFreqVal">—</div></div>
+                  <div class="classif-block"><div class="classif-label">Vocal Grade</div><div class="classif-value" id="voiceGradeVal">—</div></div>
+                </div>
+                <div class="detected-features">
+                  <div class="features-label">Vocal Characteristics</div>
+                  <div class="features-list" id="voiceFeaturesList"></div>
+                </div>
+                <div class="assessment-block">
+                  <div class="assessment-label">Acoustic Assessment</div>
+                  <div class="assessment-text" id="voiceAssessmentText"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PAGE: COMPARE
+  ═══════════════════════════════════════════════════════ -->
+  <div class="page" id="page-compare">
+    <div class="page-inner">
+      <div class="page-header">
+        <div class="section-label">FACE COMPARISON</div>
+        <p class="page-desc">Upload or capture two faces to generate a side-by-side biometric comparison report.</p>
+      </div>
+      <div class="compare-grid">
+        <!-- Face A -->
+        <div class="compare-slot">
+          <div class="compare-label">SUBJECT A</div>
+          <div class="compare-viewport" id="compareViewA">
+            <img id="compareImgA" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:8px" />
+            <div class="compare-empty" id="compareEmptyA">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>No image loaded</span>
+            </div>
+          </div>
+          <div class="input-actions" style="margin-top:10px">
+            <button class="btn-secondary" onclick="triggerCompareUpload('A')">Upload Photo</button>
+            <button class="btn-ghost" onclick="useCurrentCapture('A')">Use Last Capture</button>
+          </div>
+          <input type="file" id="compareUploadA" accept="image/*" style="display:none" onchange="handleCompareUpload(event,'A')" />
+          <div class="compare-scores" id="compareScoresA" style="display:none">
+            <div class="cs-row"><span>Overall</span><strong id="csA-overall">—</strong></div>
+            <div class="cs-row"><span>Symmetry</span><strong id="csA-sym">—</strong></div>
+            <div class="cs-row"><span>Proportions</span><strong id="csA-prop">—</strong></div>
+            <div class="cs-row"><span>Jaw</span><strong id="csA-jaw">—</strong></div>
+            <div class="cs-row"><span>Shape</span><strong id="csA-shape">—</strong></div>
+          </div>
+        </div>
+
+        <!-- VS -->
+        <div class="compare-vs">
+          <div class="vs-label">VS</div>
+          <button class="btn-primary" id="runCompareBtn" onclick="runComparison()" style="display:none">Run Comparison</button>
+          <div class="compare-winner" id="compareWinner" style="display:none"></div>
+        </div>
+
+        <!-- Face B -->
+        <div class="compare-slot">
+          <div class="compare-label">SUBJECT B</div>
+          <div class="compare-viewport" id="compareViewB">
+            <img id="compareImgB" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:8px" />
+            <div class="compare-empty" id="compareEmptyB">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>No image loaded</span>
+            </div>
+          </div>
+          <div class="input-actions" style="margin-top:10px">
+            <button class="btn-secondary" onclick="triggerCompareUpload('B')">Upload Photo</button>
+            <button class="btn-ghost" onclick="useCurrentCapture('B')">Use Last Capture</button>
+          </div>
+          <input type="file" id="compareUploadB" accept="image/*" style="display:none" onchange="handleCompareUpload(event,'B')" />
+          <div class="compare-scores" id="compareScoresB" style="display:none">
+            <div class="cs-row"><span>Overall</span><strong id="csB-overall">—</strong></div>
+            <div class="cs-row"><span>Symmetry</span><strong id="csB-sym">—</strong></div>
+            <div class="cs-row"><span>Proportions</span><strong id="csB-prop">—</strong></div>
+            <div class="cs-row"><span>Jaw</span><strong id="csB-jaw">—</strong></div>
+            <div class="cs-row"><span>Shape</span><strong id="csB-shape">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed comparison table -->
+      <div class="compare-detail" id="compareDetail" style="display:none">
+        <div class="section-label" style="margin-bottom:20px">DETAILED BREAKDOWN</div>
+        <div class="compare-table">
+          <div class="ct-header"><span>Metric</span><span id="ctLabelA">Subject A</span><span>Winner</span><span id="ctLabelB">Subject B</span></div>
+          <div id="compareTableBody"></div>
+        </div>
+        <button class="btn-primary" onclick="exportComparisonPDF()" style="margin-top:20px">Export Comparison PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PAGE: HISTORY
+  ═══════════════════════════════════════════════════════ -->
+  <div class="page" id="page-history">
+    <div class="page-inner">
+      <div class="page-header">
+        <div class="section-label">ANALYSIS HISTORY</div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn-ghost" onclick="filterHistory('all')" id="hf-all" style="border-color:#333;color:#f5f5f5">All</button>
+          <button class="btn-ghost" onclick="filterHistory('face')" id="hf-face">Face</button>
+          <button class="btn-ghost" onclick="filterHistory('voice')" id="hf-voice">Voice</button>
+          <button class="btn-ghost" onclick="clearHistory()" style="margin-left:auto;color:#ff4444;border-color:#ff4444">Clear All</button>
+        </div>
+      </div>
+      <div class="history-grid" id="historyGrid">
+        <div class="history-empty" id="historyEmpty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <p>No analyses saved yet. Run a face or voice analysis and click Save.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PAGE: DASHBOARD
+  ═══════════════════════════════════════════════════════ -->
+  <div class="page" id="page-dashboard">
+    <div class="page-inner">
+      <div class="page-header">
+        <div class="section-label">ANALYTICS DASHBOARD</div>
+        <p class="page-desc">Summary of all your analyses and session statistics.</p>
+      </div>
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <div class="dash-label">Total Analyses</div>
+          <div class="dash-value" id="dash-total">0</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-label">Face Analyses</div>
+          <div class="dash-value" id="dash-face">0</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-label">Voice Analyses</div>
+          <div class="dash-value" id="dash-voice">0</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-label">Avg Face Score</div>
+          <div class="dash-value" id="dash-avg-face">—</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-label">Avg Voice Score</div>
+          <div class="dash-value" id="dash-avg-voice">—</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-label">Best Face Score</div>
+          <div class="dash-value" id="dash-best-face">—</div>
+        </div>
+      </div>
+
+      <!-- Score trend chart -->
+      <div class="trend-section">
+        <div class="section-label" style="margin-bottom:20px">SCORE TREND</div>
+        <div class="trend-chart-wrap">
+          <canvas id="trendChart"></canvas>
+          <div class="trend-empty" id="trendEmpty">Save at least 2 analyses to see your trend.</div>
+        </div>
+      </div>
+
+      <!-- Most common face shapes -->
+      <div class="shapes-section">
+        <div class="section-label" style="margin-bottom:20px">FACE SHAPE DISTRIBUTION</div>
+        <div class="shapes-list" id="shapesList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div class="footer-wordmark">COMIC</div>
+        <div class="footer-sub">Biometric Intelligence — Local Inference Only</div>
+      </div>
+      <div class="footer-right">
+        <span class="footer-note">All processing runs on your device. No data is transmitted.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Configuration</span>
+        <button class="modal-close" onclick="closeSettings()">&#x2715;</button>
+      </div>
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchModalTab('api')">API Keys</button>
+        <button class="modal-tab" onclick="switchModalTab('deploy')">Deployment</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- API KEYS TAB -->
+        <div class="modal-section active" id="tab-api">
+          <div class="field-group">
+            <div class="field-label">OpenAI API Key</div>
+            <div class="field-desc">Used for face shape detection, skin analysis, and scoring. Your key is stored locally and never transmitted externally.</div>
+            <div class="input-row">
+              <input class="field-input" id="apiKeyInput" type="password" placeholder="sk-proj-..." autocomplete="off" spellcheck="false" />
+              <button class="btn-sm" onclick="toggleKeyVisibility()">Show</button>
+              <button class="btn-sm" onclick="saveApiKey()">Save</button>
+            </div>
+            <div class="key-status warn" id="keyStatus">
+              <span class="dot"></span>
+              <span id="keyStatusText">No key saved</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Test Connection</div>
+            <div class="field-desc">Sends a minimal request to verify the key is valid before running a full analysis.</div>
+            <button class="btn-secondary" onclick="testApiKey()">Run Connection Test</button>
+          </div>
+        </div>
+
+        <!-- DEPLOYMENT TAB -->
+        <div class="modal-section" id="tab-deploy">
+          <div class="field-label" style="margin-bottom:12px">Launch Mode</div>
+          <div class="deploy-options">
+            <label class="deploy-option selected" id="opt-local">
+              <input type="radio" name="deploy" value="local" checked onchange="selectDeployMode('local')" />
+              <div class="do-icon">L</div>
+              <div class="do-info">
+                <div class="do-name">Local Only</div>
+                <div class="do-desc">Runs on localhost:8080. Only you can access it. No HTTPS.</div>
+              </div>
+            </label>
+            <label class="deploy-option" id="opt-tunnel">
+              <input type="radio" name="deploy" value="tunnel" onchange="selectDeployMode('tunnel')" />
+              <div class="do-icon">CF</div>
+              <div class="do-info">
+                <div class="do-name">Cloudflare Tunnel</div>
+                <div class="do-desc">Creates a public HTTPS link from your local server. Camera permissions work in all browsers. Share with anyone.</div>
+              </div>
+            </label>
+            <label class="deploy-option" id="opt-pages">
+              <input type="radio" name="deploy" value="pages" onchange="selectDeployMode('pages')" />
+              <div class="do-icon">CF</div>
+              <div class="do-info">
+                <div class="do-name">Cloudflare Pages</div>
+                <div class="do-desc">Deploy frontend permanently to Cloudflare CDN. Requires a Cloudflare account and GitHub repo.</div>
+              </div>
+            </label>
+          </div>
+          <div class="deploy-cmd" id="deployCmd"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
+  <script src="js/face-analyzer.js"></script>
+  <script src="js/voice-analyzer.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/compare.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
